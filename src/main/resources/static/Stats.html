@@ -457,19 +457,20 @@
     });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const weeklyLabels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    const weeklyData = [5, 8, 6, 7, 9, 4, 3]; // Datos de ejemplo
-
     const ctxWeekly = document.getElementById('weeklyChart').getContext('2d');
-    new Chart(ctxWeekly, {
+
+    // Etiquetas de los días
+    const weeklyLabels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    // Crear gráfico vacío al inicio
+    const weeklyChart = new Chart(ctxWeekly, {
         type: 'bar',
         data: {
             labels: weeklyLabels,
             datasets: [{
                 label: 'Horas de actividad',
-                data: weeklyData,
+                data: [], // se llenará desde la API
                 backgroundColor: 'rgba(14, 113, 251, 0.5)',
                 borderColor: 'rgba(14, 113, 251, 1)',
                 borderWidth: 1,
@@ -495,6 +496,35 @@
             }
         }
     });
+
+    // Función para actualizar el gráfico desde el backend
+    async function cargarDatos() {
+        try {
+            const res = await fetch('/api/actividad');
+            const data = await res.json();
+
+            // Ordenar datos por día de la semana (1 = Lunes, 7 = Domingo)
+            const horas = new Array(7).fill(0);
+            data.forEach(item => {
+                if (item.diaSemana >= 1 && item.diaSemana <= 7) {
+                    horas[item.diaSemana - 1] = item.horas;
+                }
+            });
+
+            // Actualizar gráfico
+            weeklyChart.data.datasets[0].data = horas;
+            weeklyChart.update();
+
+        } catch (error) {
+            console.error("Error cargando datos de actividad:", error);
+        }
+    }
+
+    // Cargar al entrar
+    cargarDatos();
+
+    // Actualizar automáticamente cada 10 segundos sin recargar la página
+    setInterval(cargarDatos, 10000);
 </script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
